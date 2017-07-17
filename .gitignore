@@ -3,3 +3,5 @@
 *.exe
 lib
 bin
+*.svn*
+.svn
