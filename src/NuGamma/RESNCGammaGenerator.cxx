@@ -59,7 +59,7 @@ KineGeneratorWithCache("genie::RESNCGammaGenerator")
 RESNCGammaGenerator::RESNCGammaGenerator(string config) :
 KineGeneratorWithCache("genie::RESNCGammaGenerator", config)
 {
-  LOG("RESNCgKinematic", pINFO) << "RESNCGammaGenerator::()RESNCGammaGenerator(string config)";
+  LOG("RESNCgKinematic", pINFO) << "RESNCGammaGenerator::RESNCGammaGenerator(string config)";
 }
 
 //___________________________________________________________________________
@@ -244,6 +244,12 @@ void RESNCGammaGenerator::AddFinalStateNeutrino(GHepRecord * evrec) const
 }
 
 //___________________________________________________________________________
+double RESNCGammaGenerator::ComputeMaxXSec (const Interaction * in) const{
+  (void)in;
+  return 2.;
+}
+
+//___________________________________________________________________________
 void RESNCGammaGenerator::AddRecoilNucleon(GHepRecord * evrec) const
 {
   // Adding the recoil nucleon.
@@ -260,44 +266,3 @@ void RESNCGammaGenerator::AddTargetRemnant(GHepRecord * evrec) const
 
 
 }
-//___________________________________________________________________________
-double RESNCGammaGenerator::Energy(const Interaction * interaction) const
-{
-  // Override the base class Energy() method to cache the max xsec for the
-  // neutrino energy in the LAB rather than in the hit nucleon rest frame.
-  
-  const InitialState & init_state = interaction->InitState();
-  double E = init_state.ProbeE(kRfLab);
-  return E;
-}
-//___________________________________________________________________________
-double RESNCGammaGenerator::ComputeMaxXSec(GHepRecord * evrec) const
-{
-  std::cout << "double RESNCGammaGenerator::ComputeMaxXSec(GHepRecord * evrec) const" << std::endl;
-  return 2.;
-}
-//___________________________________________________________________________
-//___________________________________________________________________________
-void RESNCGammaGenerator::Configure(const Registry & config)
-{
-  LOG("RESNCgKinematic", pINFO) << "registry " << config;
-  Algorithm::Configure(config);
-  LOG("RESNCgKinematic", pINFO) << "registry " << config;
-  this->LoadConfig();
-}
-//____________________________________________________________________________
-void RESNCGammaGenerator::Configure(string config)
-{
-  LOG("RESNCgKinematic", pINFO) << "registry " << config;
-  Algorithm::Configure(config);
-  LOG("RESNCgKinematic", pINFO) << "registry " << config;
-
-  this->LoadConfig();
-}
-//____________________________________________________________________________
-void RESNCGammaGenerator::LoadConfig(void)
-{
-  fGenerateUniformly = fConfig->GetBoolDef("UniformOverPhaseSpace", false);
-}
-//____________________________________________________________________________
-

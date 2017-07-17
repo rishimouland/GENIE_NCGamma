@@ -30,26 +30,15 @@ public :
   RESNCGammaGenerator(string config);
   ~RESNCGammaGenerator();
   
-  void Configure(const Registry & config);
-  void Configure(string config);
-  
-  // methods to load sub-algorithms and config data from the Registry
-  void LoadConfig (void);
-  
-  //-- implement the EventRecordVisitorI interface
   void ProcessEventRecord (GHepRecord * event_rec) const;
-
-  // Overload KineGeneratorWithCache functions
-  double ComputeMaxXSec      (GHepRecord * event_rec) const;
-  double Energy              (const Interaction * in) const;
-
-
+  double ComputeMaxXSec (const Interaction * in) const;
 private:
   void AddPhoton             (GHepRecord * event_rec) const;
   void AddFinalStateNeutrino (GHepRecord * event_rec) const;
   void AddTargetRemnant      (GHepRecord * event_rec) const;
   void AddRecoilNucleon      (GHepRecord * event_rec) const;
   bool fGenerateUniformly;
+  
 };
 
 }      // genie namespace
