@@ -52,13 +52,13 @@ LARNCGammaXSec::~LARNCGammaXSec()
 
 }
 //____________________________________________________________________________
-double LARNCGammaXSec::XSec(
-			    const Interaction * interaction, KinePhaseSpace_t /*kps*/) const
+double LARNCGammaXSec::XSec(const Interaction * interaction, KinePhaseSpace_t /*kps*/) const
 {
   if(! this -> ValidProcess    (interaction) ) return 0.;
   if(! this -> ValidKinematics (interaction) ) return 0.;
   LOG("LARNCGammaXSec", pWARN)
-    << "*** Calculating the cross section";  //  this->CalcAmplitude();
+    << "*** Calculating the cross section";
+  //  this->CalcAmplitude();
 
   InitialState* initialstate =  interaction->InitStatePtr();
   Kinematics* kine = interaction->KinePtr();  
@@ -67,6 +67,11 @@ double LARNCGammaXSec::XSec(
   double Q2 =       interaction->KinePtr()->GetKV(kKVQ2);
   double EGamma =   interaction->KinePtr()->GetKV(kKVEGamma);
   double PhiGamma = interaction->KinePtr()->GetKV(kKVPhiGamma);
+  LOG("LARNCGammaXSec", pWARN)  << "W        " << W;
+  LOG("LARNCGammaXSec", pWARN)  << "Q2       " << Q2;
+  LOG("LARNCGammaXSec", pWARN)  << "EGamma   " << EGamma;
+  LOG("LARNCGammaXSec", pWARN)  << "PhiGamma " << PhiGamma;
+  
   
   gNeutrinoInit = (TLorentzVector*)initialstate->GetProbeP4()->Clone();
   gTargetInit   = (TLorentzVector*)initialstate->GetTgtP4()->Clone();

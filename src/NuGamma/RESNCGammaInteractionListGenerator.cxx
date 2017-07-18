@@ -22,16 +22,13 @@ using namespace genie;
 
 //___________________________________________________________________________
 RESNCGammaInteractionListGenerator::RESNCGammaInteractionListGenerator() :
-InteractionListGeneratorI(
-	"genie::RESNCGammaInteractionListGenerator")
+InteractionListGeneratorI("genie::RESNCGammaInteractionListGenerator")
 {
-
+  std::cout << "RESNCGammaInteractionListGenerator" << std::endl;
 }
 //___________________________________________________________________________
-RESNCGammaInteractionListGenerator::RESNCGammaInteractionListGenerator(
- string config):
-InteractionListGeneratorI(
-	"genie::RESNCGammaInteractionListGenerator", config)
+RESNCGammaInteractionListGenerator::RESNCGammaInteractionListGenerator(string config):
+  InteractionListGeneratorI("genie::RESNCGammaInteractionListGenerator", config)
 {
 
 }
@@ -46,6 +43,7 @@ InteractionList * RESNCGammaInteractionListGenerator::CreateInteractionList(
 {
   LOG("IntLst", pINFO)
      << "InitialState = " << init_state.AsString();
+  std::cout << "READING RECNCGAMMAINTERACTION LIST GENERATOR"  << std::endl;
 
   int nupdg   = init_state.ProbePdg();
   int tgtpdg  = init_state.Tgt().Pdg();
@@ -65,4 +63,3 @@ InteractionList * RESNCGammaInteractionListGenerator::CreateInteractionList(
 
   return intlist;
 }
-//___________________________________________________________________________
