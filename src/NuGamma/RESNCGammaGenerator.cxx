@@ -292,6 +292,10 @@ void RESNCGammaGenerator::ProcessEventRecord(GHepRecord * evrec) const
 
 	gEGamma = GammaP4.E();
 	gPhiGamma = ATan2(GammaP4.Y(),GammaP4.X());
+
+	if(gPhiGamma < 0) {
+		gPhiGamma = gPhiGamma + 2*Pi();
+	}
         
       LOG("RESNCgKinematic", pINFO) << "Selected: W        = " << gW;
       LOG("RESNCgKinematic", pINFO) << "          Q2       = " << gQ2;
