@@ -5,4 +5,4 @@ lib
 bin
 *.svn*
 .svn
-*DICT*
+src/*/_ROOT_DICT*.cc

@@ -33,11 +33,19 @@ public :
   void ProcessEventRecord (GHepRecord * event_rec) const;
   double ComputeMaxXSec (const Interaction * in) const;
 private:
+  void ThrowKinematics       (GHepRecord * event_rec) const;
   void AddPhoton             (GHepRecord * event_rec) const;
   void AddFinalStateNeutrino (GHepRecord * event_rec) const;
   void AddTargetRemnant      (GHepRecord * event_rec) const;
   void AddRecoilNucleon      (GHepRecord * event_rec) const;
   bool fGenerateUniformly;
+  TLorentzVector* Gamma;
+  TLorentzVector* OutgoingNucleon;
+  TLorentzVector* OutgoingNeutrino;
+  TLorentzVector* Resonance;
+
+
+  
   
 };
 
