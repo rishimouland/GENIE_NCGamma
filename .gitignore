@@ -6,3 +6,4 @@ bin
 *.svn*
 .svn
 src/*/_ROOT_DICT*.cc
+src/*/_ROOT_DICT*.h
