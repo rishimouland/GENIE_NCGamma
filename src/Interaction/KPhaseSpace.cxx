@@ -397,6 +397,30 @@ Range1D_t KPhaseSpace::q2Lim_W(void) const
   return q2;
 }
 //____________________________________________________________________________
+//Range1D_t KPhaseSpace::EGammaLim_Q2W(void) const
+//{
+  // Computes the NCGamma energy at the input momentum transfer Q2 and invariant mass W
+  //
+
+//  Range1D_t EGamma;
+// EGamma.min = -1;
+//  EGamma.max = -1;
+
+//  const InitialState & init_state = fInteraction->InitState();
+//  double Ev  = init_state.ProbeE(kRfHitNucRest);
+//  double M   = init_state.Tgt().HitNucP4Ptr()->M(); // can be off m/shell
+//  double ml  = fInteraction->FSPrimLepton()->Mass();
+
+  // Get the relevant set variables
+//  double W = kinematics::W(fInteraction);
+//  double Q2 = kinematics::Q2(fInteraction)
+
+//  EGamma.min = 0;
+  
+  
+//  return EGamma;
+//}
+//____________________________________________________________________________
 Range1D_t KPhaseSpace::Q2Lim(void) const
 {
   // Computes momentum transfer (Q2>0) limits irrespective of the invariant mass
