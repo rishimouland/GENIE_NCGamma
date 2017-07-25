@@ -53,7 +53,14 @@ using namespace TMath;
 RESNCGammaGenerator::RESNCGammaGenerator() :
 KineGeneratorWithCache("genie::RESNCGammaGenerator")
 {
-  LOG("RESNCgKinematic", pINFO) << "RESNCGammaGenerator::RESNCGammaGenerator()";
+  Gamma             = new TLorentzVector();
+  OutgoingNucleon   = new TLorentzVector();
+  OutgoingNeutrino  = new TLorentzVector();
+  Resonance         = new TLorentzVector();
+
+
+
+  
 }
 
 //___________________________________________________________________________
@@ -67,12 +74,25 @@ KineGeneratorWithCache("genie::RESNCGammaGenerator", config)
 RESNCGammaGenerator::~RESNCGammaGenerator()
 {
   LOG("RESNCgKinematic", pINFO) << "RESNCGammaGenerator::~RESNCGammaGenerator()";
+  delete Gamma;
+  delete OutgoingNucleon;
+  delete OutgoingNeutrino;
+  delete Resonance;
+
 }
 
 //___________________________________________________________________________
 void RESNCGammaGenerator::ProcessEventRecord(GHepRecord * evrec) const
 {
+  ThrowKinematics(evrec);
+  AddPhoton             (evrec);
+  AddFinalStateNeutrino (evrec);
+  AddTargetRemnant      (evrec);
+  AddRecoilNucleon      (evrec);
+  
+}
 
+void RESNCGammaGenerator::ThrowKinematics(GHepRecord * evrec) const{
   LOG("RESNCgKinematic", pINFO) << "-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/";
   LOG("RESNCgKinematic", pINFO) << "-/-RESNCGammaGenerator::ProcessEventRecord(GHepRecord * evrec) const-/-/";
   LOG("RESNCgKinematic", pINFO) << "-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/";
@@ -246,7 +266,10 @@ void RESNCGammaGenerator::ProcessEventRecord(GHepRecord * evrec) const
 	double EGamma_Hadr = ( Power(gW,2) - Power(TgtNucM,2) ) / (2 * gW);
 	double CosThetaGamma_Hadr = ( 2 * rnd->RndKine().Rndm() ) -1;
 	double PhiGamma_Hadr = 2*TMath::Pi()* rnd->RndKine().Rndm();
-	TLorentzVector GammaP4( EGamma_Hadr * Sqrt(1 - Power(CosThetaGamma_Hadr,2)) * Cos(PhiGamma_Hadr) , EGamma_Hadr * Sqrt(1 - Power(CosThetaGamma_Hadr,2)) * Sin(PhiGamma_Hadr) , EGamma_Hadr * CosThetaGamma_Hadr , EGamma_Hadr );
+	Gamma->SetPxPyPzE( EGamma_Hadr * Sqrt(1 - Power(CosThetaGamma_Hadr,2)) * Cos(PhiGamma_Hadr) ,
+                           EGamma_Hadr * Sqrt(1 - Power(CosThetaGamma_Hadr,2)) * Sin(PhiGamma_Hadr) ,
+                           EGamma_Hadr * CosThetaGamma_Hadr ,
+                           EGamma_Hadr );
 
 	// We now need to determine the 4-momentum of the resonance, in the lab frame
 
@@ -267,31 +290,34 @@ void RESNCGammaGenerator::ProcessEventRecord(GHepRecord * evrec) const
 	double OutNeuSinTheta = Sqrt(1-Power(OutNeuCosTheta,2));
 	double OutNeuPhi = 2*TMath::Pi() * rnd->RndKine().Rndm();
 	
-	TLorentzVector ResP4( -OutNeuE * OutNeuSinTheta * Cos(OutNeuPhi) , -OutNeuE * OutNeuSinTheta * Sin(OutNeuPhi) , ProbeP4->E() - OutNeuE * OutNeuCosTheta , ProbeP4->E() - OutNeuE + HitNucM );
+	Resonance->SetPxPyPzE( -OutNeuE * OutNeuSinTheta * Cos(OutNeuPhi) ,
+                               -OutNeuE * OutNeuSinTheta * Sin(OutNeuPhi) ,
+                               ProbeP4->E() - OutNeuE * OutNeuCosTheta ,
+                               ProbeP4->E() - OutNeuE + HitNucM );
 
 	// We must now rotate to align with the probe angle of approach
 
 	double ProbeTheta = ACos( ProbeP4->Z() / ProbeP4->E() );
 	double ProbePhi = ATan2( ProbeP4->Y() , ProbeP4->X() );
 
-	ResP4.RotateY(ProbeTheta);
-	ResP4.RotateZ(ProbePhi);
+	Resonance->RotateY(ProbeTheta);
+	Resonance->RotateZ(ProbePhi);
 
 	// Now, we boost the resonance 4-momementum by the hit nucleon velocity,
 	// which gives us the resonance 4-momentum in the lab frame			
 
-	ResP4.Boost(HitNucP4.BoostVector());
+	Resonance->Boost(HitNucP4.BoostVector());
 
 	// Finally, we can boost the photon 4-momentum by the resonance velocity,
 	// giving us the photon 4-momentum in the lab frame
 
-	GammaP4.Boost(ResP4.BoostVector());
+	Gamma->Boost(Resonance->BoostVector());
 
 	// From this 4-momentum, we calculate the energy and phi angle of the
 	// photon, in the lab frame
 
-	gEGamma = GammaP4.E();
-	gPhiGamma = ATan2(GammaP4.Y(),GammaP4.X());
+	gEGamma = Gamma->E();
+	gPhiGamma = ATan2(Gamma->Y(),Gamma->X());
         
       LOG("RESNCgKinematic", pINFO) << "Selected: W        = " << gW;
       LOG("RESNCgKinematic", pINFO) << "          Q2       = " << gQ2;
@@ -322,7 +348,7 @@ void RESNCGammaGenerator::AddPhoton(GHepRecord * evrec) const
   // Adding the final state photon
   //
   LOG("RESNCgKinematic", pINFO) << "Adding final state photon";
-
+  Gamma;
 }
 
 //___________________________________________________________________________
@@ -333,7 +359,7 @@ void RESNCGammaGenerator::AddFinalStateNeutrino(GHepRecord * evrec) const
   // Just use 4-momentum conservation (init_neutrino = photon + final_neutrino)
   
   LOG("RESNCgKinematic", pINFO) << "Adding final state neutrino";
-
+  (void)evrec;
  
 }
 
