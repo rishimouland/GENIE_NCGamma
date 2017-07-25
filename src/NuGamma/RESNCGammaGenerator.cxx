@@ -318,6 +318,10 @@ void RESNCGammaGenerator::ThrowKinematics(GHepRecord * evrec) const{
 
 	gEGamma = Gamma->E();
 	gPhiGamma = ATan2(Gamma->Y(),Gamma->X());
+
+	if(gPhiGamma < 0) {
+		gPhiGamma = gPhiGamma + 2*Pi();
+	}
         
       LOG("RESNCgKinematic", pINFO) << "Selected: W        = " << gW;
       LOG("RESNCgKinematic", pINFO) << "          Q2       = " << gQ2;
