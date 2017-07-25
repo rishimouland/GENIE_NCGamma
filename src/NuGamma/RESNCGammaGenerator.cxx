@@ -277,10 +277,15 @@ void RESNCGammaGenerator::ProcessEventRecord(GHepRecord * evrec) const
 	ResP4.RotateY(ProbeTheta);
 	ResP4.RotateZ(ProbePhi);
 
-	// Finally, we boost by the hit nucleon velocity, which gives us the resonance
-	// 4-momentum in the lab frame			
+	// Now, we boost the resonance 4-momementum by the hit nucleon velocity,
+	// which gives us the resonance 4-momentum in the lab frame			
 
-	GammaP4.Boost(HitNucP4.BoostVector());
+	ResP4.Boost(HitNucP4.BoostVector());
+
+	// Finally, we can boost the photon 4-momentum by the resonance velocity,
+	// giving us the photon 4-momentum in the lab frame
+
+	GammaP4.Boost(ResP4.BoostVector());
 
 	// From this 4-momentum, we calculate the energy and phi angle of the
 	// photon, in the lab frame

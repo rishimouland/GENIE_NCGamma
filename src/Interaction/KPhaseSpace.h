@@ -65,6 +65,7 @@ public:
   Range1D_t  YLim    (double xsi) const;  ///< y  limits (COH)
   Range1D_t  YLim_X  (double xsi) const;  ///< y  limits @ fixed x (COH)
   Range1D_t  TLim    (void) const;  ///< t  limits
+  Range1D_t  EGammaLim_Q2W (void) const;   ///< EGamma limits @ fixed Q2,W
 
 private:
 

@@ -45,10 +45,12 @@
 #include "PDG/PDGLibrary.h"
 #include "Utils/KineUtils.h"
 #include "Utils/MathUtils.h"
+#include "Numerical/RandomGen.h"
 
 using namespace genie;
 using namespace genie::utils;
 using namespace genie::constants;
+using namespace TMath;
 
 ClassImp(KPhaseSpace)
 
@@ -397,29 +399,57 @@ Range1D_t KPhaseSpace::q2Lim_W(void) const
   return q2;
 }
 //____________________________________________________________________________
-//Range1D_t KPhaseSpace::EGammaLim_Q2W(void) const
-//{
-  // Computes the NCGamma energy at the input momentum transfer Q2 and invariant mass W
-  //
+Range1D_t KPhaseSpace::EGammaLim_Q2W(void) const
+{
+  // Computes the NCGamma energy range at the input momentum transfer Q2 and invariant mass W
+  // Code largely from RESNCGammaGenerator::ProcessEventRecord.
 
-//  Range1D_t EGamma;
-// EGamma.min = -1;
-//  EGamma.max = -1;
+  Range1D_t EGamma;
+  EGamma.min = 0;
+  EGamma.max = 0;
 
-//  const InitialState & init_state = fInteraction->InitState();
-//  double Ev  = init_state.ProbeE(kRfHitNucRest);
-//  double M   = init_state.Tgt().HitNucP4Ptr()->M(); // can be off m/shell
-//  double ml  = fInteraction->FSPrimLepton()->Mass();
+  RandomGen * rnd = RandomGen::Instance();
+
+  const InitialState & init_state = fInteraction->InitState();
 
   // Get the relevant set variables
-//  double W = kinematics::W(fInteraction);
-//  double Q2 = kinematics::Q2(fInteraction)
+  double gW = kinematics::W(fInteraction);
+  double gQ2 = kinematics::Q2(fInteraction);
 
-//  EGamma.min = 0;
+  TLorentzVector * ProbeP4 = init_state.GetProbeP4(kRfHitNucRest);
+  TLorentzVector HitNucP4 = init_state.Tgt().HitNucP4();
+
+  double HitNucM = init_state.Tgt().HitNucP4().M();
+  double OutNeuE = ProbeP4->E() + (1/(2*HitNucM))*( Power(HitNucM,2) - Power(gW,2) - gQ2 );
+  double OutNeuCosTheta = 1 - (1/(2*ProbeP4->E()*OutNeuE))*gQ2;
+  double OutNeuSinTheta = Sqrt(1-Power(OutNeuCosTheta,2));
+  double OutNeuPhi = 2*TMath::Pi() * rnd->RndKine().Rndm();
+
+  TLorentzVector ResP4( -OutNeuE * OutNeuSinTheta * Cos(OutNeuPhi) , -OutNeuE * OutNeuSinTheta * Sin(OutNeuPhi) , ProbeP4->E() - OutNeuE * OutNeuCosTheta , ProbeP4->E() - OutNeuE + HitNucM );
+
+  double ProbeTheta = ACos( ProbeP4->Z() / ProbeP4->E() );
+  double ProbePhi = ATan2( ProbeP4->Y() , ProbeP4->X() );
+
+  ResP4.RotateY(ProbeTheta);
+  ResP4.RotateZ(ProbePhi);
+
+  ResP4.Boost(HitNucP4.BoostVector());
+
+  double TgtNucM = 0;
+
+	if(init_state.IsNuN()) {
+		TgtNucM = 0.939565346;
+	} else if(init_state.IsNuP()) {
+		TgtNucM = 0.938272046;
+	} else {
+		LOG("RESNCgKinematic", pWARN) << "*** Hit nucleon not a nucleon???";
+	}
+
+  EGamma.max = ResP4.E() - TgtNucM;
   
   
-//  return EGamma;
-//}
+  return EGamma;
+}
 //____________________________________________________________________________
 Range1D_t KPhaseSpace::Q2Lim(void) const
 {
