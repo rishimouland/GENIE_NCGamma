@@ -22,6 +22,8 @@
 #include "Messenger/Messenger.h"
 #include "PDG/PDGUtils.h"
 #include "Utils/KineUtils.h"
+
+#include "TF2.h"
 // #include "NuGamma/Tensor.h"
 // #include "NuGamma/TensorDim1.h"
 // #include "NuGamma/TensorDim2.h"
@@ -65,16 +67,18 @@ double LARNCGammaXSec::XSec(const Interaction * interaction, KinePhaseSpace_t /*
   
   double W =        interaction->KinePtr()->GetKV(kKVW);
   double Q2 =       interaction->KinePtr()->GetKV(kKVQ2);
-  double EGamma =   interaction->KinePtr()->GetKV(kKVEGamma);
-  double PhiGamma = interaction->KinePtr()->GetKV(kKVPhiGamma);
+  //double EGamma =   interaction->KinePtr()->GetKV(kKVEGamma);
+  //double PhiGamma = interaction->KinePtr()->GetKV(kKVPhiGamma);
   LOG("LARNCGammaXSec", pWARN)  << "W        " << W;
   LOG("LARNCGammaXSec", pWARN)  << "Q2       " << Q2;
-  LOG("LARNCGammaXSec", pWARN)  << "EGamma   " << EGamma;
-  LOG("LARNCGammaXSec", pWARN)  << "PhiGamma " << PhiGamma;
+  //LOG("LARNCGammaXSec", pWARN)  << "EGamma   " << EGamma;
+  //LOG("LARNCGammaXSec", pWARN)  << "PhiGamma " << PhiGamma;
+  //TF2 function("(TMath::Gauss(y,1.232,200)+TMath::Gauss(y,1.5,500))/(1+x/1.)^2");
+ 
+  //return function.Eval(Q2,W);
   
-  
-  gNeutrinoInit = (TLorentzVector*)initialstate->GetProbeP4()->Clone();
-  gTargetInit   = (TLorentzVector*)initialstate->GetTgtP4()->Clone();
+  //gNeutrinoInit = (TLorentzVector*)initialstate->GetProbeP4()->Clone();
+  //gTargetInit   = (TLorentzVector*)initialstate->GetTgtP4()->Clone();
  
 
   //TensorDim4* output1, output2;

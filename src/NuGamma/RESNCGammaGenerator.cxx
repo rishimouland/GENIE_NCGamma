@@ -96,16 +96,6 @@ void RESNCGammaGenerator::ThrowKinematics(GHepRecord * evrec) const{
   LOG("RESNCgKinematic", pINFO) << "-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/";
   LOG("RESNCgKinematic", pINFO) << "-/-RESNCGammaGenerator::ProcessEventRecord(GHepRecord * evrec) const-/-/";
   LOG("RESNCgKinematic", pINFO) << "-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/-/";
-  //exit(1);
-  // this->AddPhoton(evrec);
-  // this->AddFinalStateNeutrino(evrec);
-  // this->AddRecoilNucleon(evrec);
-  // this->AddTargetRemnant(evrec);
-  // for
-  // if(fGenerateUniformly) {
-  //   LOG("RESNCgKinematic", pNOTICE)
-  //         << "Generating kinematics uniformly over the allowed phase space";
-  // }
 
   //-- Get the random number generators
   RandomGen * rnd = RandomGen::Instance();
@@ -118,22 +108,10 @@ void RESNCGammaGenerator::ThrowKinematics(GHepRecord * evrec) const{
   //-- Get the interaction from the GHEP record
   Interaction * interaction = evrec->Summary();
   interaction->SetBit(kISkipProcessChk);
-
-  //-- Check for EM or CC process
-  bool is_not_valid = interaction->ProcInfo().IsEM() || interaction->ProcInfo().IsWeakCC();
-  if(is_not_valid){
-    LOG("RESNCgKinematic", pFATAL) << "The interaction is EM or CC";
-    //evrec->EventFlags()->SetBitNumber(kKineGenErr, true);
-    genie::exceptions::EVGThreadException exception;
-    exception.SetReason("Bad configuration of interaction");
-    exception.SwitchOnFastForward();
-    throw exception;
-  }
   
-  //-- Compute the phase space limits only for W
+  //-- Compute the phase space limits for W, given input parameters, hit nucleon momentum
   const KPhaseSpace & kps = interaction->PhaseSpace();
   Range1D_t range_W  = kps.Limits(kKVW);
-  // Range1D_t range_Q2 = kps.Limits(kKVQ2);
 
   // Luis's model can go till W<~2GeV
   // Check is the limit are reasonable
@@ -151,9 +129,6 @@ void RESNCGammaGenerator::ThrowKinematics(GHepRecord * evrec) const{
 
   // Set initial state
   const InitialState & init_state = interaction -> InitState();
-  //  double E = init_state.ProbeE(kRfHitNucRest);
-  //  double M = init_state.Tgt().HitNucP4().M();
-  //  double ml  = interaction->FSPrimLepton()->Mass();
 
   //-- For the subsequent kinematic selection with the rejection method:
   //   Calculate the max differential cross section or retrieve it from the
@@ -163,16 +138,13 @@ void RESNCGammaGenerator::ThrowKinematics(GHepRecord * evrec) const{
   //   space the max xsec is irrelevant
   double xsec_max = this->MaxXSec(evrec);
 
-  //-- Try to select a valid W using the rejection method
+  // Set W range length
   double dW   = range_W.max - range_W.min;
   
   double xsec = -1;
 
   unsigned int iter = 0;
-  bool acceptW = false;
-  bool acceptQ2 = false;
-  //bool acceptEGamma = false;
-  //bool acceptPhiGamma = false;
+  bool accept = false;
 
   // Variables that we are throwing in the rejection method
   double gW        = 0; // hadronic invariant mass
@@ -195,50 +167,39 @@ void RESNCGammaGenerator::ThrowKinematics(GHepRecord * evrec) const{
     
     // We firstly use a (simple) rejection method to choose a value for W
 
-    gW        = range_W.min + dW * rnd->RndKine().Rndm();
+    gW = range_W.min + dW * rnd->RndKine().Rndm();
 
     LOG("RESNCgKinematic", pINFO) << "Trying: W        = " << gW;	   
 
-    //-- Set kinematics for current trial
-    interaction->KinePtr()->SetW(gW);		     
-    //interaction->KinePtr()->SetQ2(gQ2);	     
-    //interaction->KinePtr()->SetKV(kKVEGamma,   gEGamma);    
-    //interaction->KinePtr()->SetKV(kKVPhiGamma, gPhiGamma);
+    // Set kinematics for current trial
+    interaction->KinePtr()->SetW(gW);
+
+    // Given chosen gW, find the range of Q2		
+    
+    Range1D_t range_Q2 = kps.Q2Lim_W();
+    double dQ2   = range_Q2.max - range_Q2.min;
+    gQ2 = range_Q2.min + dQ2 * rnd->RndKine().Rndm();
+
+
+    // Set kinematics
+    interaction->KinePtr()->SetQ2(gQ2);
   
-    //-- Computing cross section for the current kinematics
+    // Computing cross section for the current kinematics
     xsec = fXSecModel->XSec(interaction);
 
-    double tW =  xsec_max * rnd->RndKine().Rndm();
+
+    // Randomly pick point for rejection method
+    double tQ2W =  xsec_max * rnd->RndKine().Rndm();
     //This is probably something I will need to implement?
     //this->AssertXSecLimits(interaction, xsec, xsec_max);
-    LOG("RESNCgKinematic", pINFO) << "tW = " << tW;
+    LOG("RESNCgKinematic", pINFO) << "tQ2W = " << tQ2W;
     LOG("RESNCgKinematic", pINFO) << "xsec = " << xsec;
     
-    acceptW = (tW < xsec);
+    accept = (tQ2W < xsec);
 
-    if(acceptW) {
-	// We now do the same for Q2, given our fixed value for W
-
-	while(acceptQ2 == false){
-	Range1D_t range_Q2 = kps.Q2Lim_W();
-	double dQ2   = range_Q2.max - range_Q2.min;
-	gQ2 = range_Q2.min + dQ2 * rnd->RndKine().Rndm();
-
-	interaction->KinePtr()->SetQ2(gQ2);
-	xsec = fXSecModel->XSec(interaction);
-	
-	double tQ2 = xsec_max * rnd->RndKine().Rndm();
-	LOG("RESNCgKinematic", pINFO) << "tQ2 = " << tQ2;
-    	LOG("RESNCgKinematic", pINFO) << "xsec = " << xsec;
-
-	acceptQ2 = (tQ2 < xsec);
-	}
-	
-     }
-
-    //-- If the generated kinematics are accepted, we randomly generate the photon
-    //-- kinematics, and finish
-    if(acceptQ2) {
+    // If the generated kinematics are accepted, we randomly generate the photon
+    // kinematics, and finish
+    if(accept) {
 
 	// We calculate the photon 4-momentum in the lab frame. This involves
 	// working in the hadronic centre of mass frame and disregarding any
@@ -248,9 +209,9 @@ void RESNCGammaGenerator::ThrowKinematics(GHepRecord * evrec) const{
 	double TgtNucM = -1;
 
 	if(init_state.IsNuN()) {
-		TgtNucM = 0.939565346;
+		TgtNucM = PDGLibrary::Instance()->Find(2112)->Mass();
 	} else if(init_state.IsNuP()) {
-		TgtNucM = 0.938272046;
+		TgtNucM = PDGLibrary::Instance()->Find(2212)->Mass();
 	} else {
 		LOG("RESNCgKinematic", pWARN) << "*** Hit nucleon not a nucleon???";
 	}
@@ -278,6 +239,8 @@ void RESNCGammaGenerator::ThrowKinematics(GHepRecord * evrec) const{
 
 	TLorentzVector * ProbeP4 = init_state.GetProbeP4(kRfHitNucRest);
 	TLorentzVector HitNucP4 = init_state.Tgt().HitNucP4();
+	std::cout << "Check - Hit nucleon 4-momentum: ";
+	HitNucP4.Print();
 
 	// In the hit nucleon rest frame, we use W and Q2 to calculate the resonance
 	// 4-momentum, randomising the angle about which the system is symmetric
@@ -322,6 +285,15 @@ void RESNCGammaGenerator::ThrowKinematics(GHepRecord * evrec) const{
 	if(gPhiGamma < 0) {
 		gPhiGamma = gPhiGamma + 2*Pi();
 	}
+
+	// We also calculate the outgoing nucleon 4-momentum
+
+	OutgoingNucleon->SetPxPyPzE( Resonance->Px() - Gamma->Px() , Resonance->Py() - Gamma->Py() , Resonance->Pz() - Gamma->Pz() , Resonance->E() - Gamma->E() );
+
+	// and also the outgoing neutrino
+
+	TLorentzVector * ProbeP4Lab = init_state.GetProbeP4(kRfLab);
+	OutgoingNeutrino->SetPxPyPzE( ProbeP4Lab->Px() + HitNucP4.Px() - Resonance->Px() , ProbeP4Lab->Py() + HitNucP4.Py() - Resonance->Py() , ProbeP4Lab->Pz() + HitNucP4.Pz() - Resonance->Pz() , ProbeP4Lab->E() + HitNucP4.E() - Resonance->E() );
         
       LOG("RESNCgKinematic", pINFO) << "Selected: W        = " << gW;
       LOG("RESNCgKinematic", pINFO) << "          Q2       = " << gQ2;
@@ -352,7 +324,10 @@ void RESNCGammaGenerator::AddPhoton(GHepRecord * evrec) const
   // Adding the final state photon
   //
   LOG("RESNCgKinematic", pINFO) << "Adding final state photon";
-  Gamma;
+
+  TLorentzVector x4(0,0,0,0);
+  evrec->AddParticle(22, kIStStableFinalState, 2,-1,-1,-1, *Gamma, x4);
+  
 }
 
 //___________________________________________________________________________
@@ -360,17 +335,25 @@ void RESNCGammaGenerator::AddFinalStateNeutrino(GHepRecord * evrec) const
 {
   std::cout << "void RESNCGammaGenerator::AddFinalStateNeutrino(GHepRecord * evrec) const" << std::endl;
   // Adding the final state neutrino
-  // Just use 4-momentum conservation (init_neutrino = photon + final_neutrino)
   
   LOG("RESNCgKinematic", pINFO) << "Adding final state neutrino";
-  (void)evrec;
+
+  TLorentzVector x4(0,0,0,0);
+
+  // Get neutrino flavour
  
+  Interaction * interaction = evrec->Summary();
+  const InitialState & init_state = interaction->InitState();
+  int ProbePdg = init_state.ProbePdg();
+
+  evrec->AddParticle(ProbePdg, kIStStableFinalState, 0,-1,-1,-1, *OutgoingNeutrino, x4);
+
 }
 
 //___________________________________________________________________________
 double RESNCGammaGenerator::ComputeMaxXSec (const Interaction * in) const{
   (void)in;
-  return 2.;
+  return 3.;
 }
 
 //___________________________________________________________________________
@@ -378,6 +361,16 @@ void RESNCGammaGenerator::AddRecoilNucleon(GHepRecord * evrec) const
 {
   // Adding the recoil nucleon.
   LOG("RESNCgKinematic", pINFO) << "Adding recoil nucleon";
+
+  TLorentzVector x4(0,0,0,0);
+
+  // Get nucleon pdg
+ 
+  Interaction * interaction = evrec->Summary();
+  const InitialState & init_state = interaction->InitState();
+  int HitNucPdg = init_state.Tgt().HitNucPdg();
+
+  evrec->AddParticle(HitNucPdg, kIStStableFinalState, 2,-1,-1,-1, *OutgoingNucleon, x4);
 
 }
 

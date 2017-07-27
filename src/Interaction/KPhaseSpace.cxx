@@ -438,9 +438,9 @@ Range1D_t KPhaseSpace::EGammaLim_Q2W(void) const
   double TgtNucM = 0;
 
 	if(init_state.IsNuN()) {
-		TgtNucM = 0.939565346;
+		TgtNucM = PDGLibrary::Instance()->Find(2112)->Mass();
 	} else if(init_state.IsNuP()) {
-		TgtNucM = 0.938272046;
+		TgtNucM = PDGLibrary::Instance()->Find(2212)->Mass();
 	} else {
 		LOG("RESNCgKinematic", pWARN) << "*** Hit nucleon not a nucleon???";
 	}
