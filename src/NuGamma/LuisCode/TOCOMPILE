@@ -1,0 +1,2 @@
+To compile:
+gfortran cs.f90 cgaus.f
