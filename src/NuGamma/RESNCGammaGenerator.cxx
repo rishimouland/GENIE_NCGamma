@@ -178,8 +178,13 @@ void RESNCGammaGenerator::ThrowKinematics(GHepRecord * evrec) const{
     
     Range1D_t range_Q2 = kps.Q2Lim_W();
     double dQ2   = range_Q2.max - range_Q2.min;
-    gQ2 = range_Q2.min + dQ2 * rnd->RndKine().Rndm();
 
+//    if( range_Q2.min > 0.25 || range_Q2.max < 0.25){
+//	break;
+//    }
+
+    gQ2 = range_Q2.min + dQ2 * rnd->RndKine().Rndm();
+//    gQ2 = 0.25;
 
     // Set kinematics
     interaction->KinePtr()->SetQ2(gQ2);
@@ -194,6 +199,10 @@ void RESNCGammaGenerator::ThrowKinematics(GHepRecord * evrec) const{
     //this->AssertXSecLimits(interaction, xsec, xsec_max);
     LOG("RESNCgKinematic", pINFO) << "tQ2W = " << tQ2W;
     LOG("RESNCgKinematic", pINFO) << "xsec = " << xsec;
+    
+    if(xsec > xsec_max) {
+	LOG("RESNCgKinematic", pWARN) << "@~@~@~@~@~@ WARNING: MAX XSEC SET TOO LOW! @~@~@~@~@~@~@";
+    }
     
     accept = (tQ2W < xsec);
 
@@ -353,7 +362,7 @@ void RESNCGammaGenerator::AddFinalStateNeutrino(GHepRecord * evrec) const
 //___________________________________________________________________________
 double RESNCGammaGenerator::ComputeMaxXSec (const Interaction * in) const{
   (void)in;
-  return 400.;
+  return 200.;
 }
 
 //___________________________________________________________________________
