@@ -65,14 +65,12 @@ double LARNCGammaXSec::XSec(const Interaction * interaction, KinePhaseSpace_t /*
   if(! this -> ValidKinematics (interaction) ) return 0.;
   LOG("LARNCGammaXSec", pWARN)
     << "*** Calculating the cross section";
-  //  this->CalcAmplitude();
 
   InitialState* initialstate =  interaction->InitStatePtr();
   Kinematics* kine = interaction->KinePtr();  
   
   double *W  = new double(interaction->KinePtr()->GetKV(kKVW));
   double *Q2 = new double(interaction->KinePtr()->GetKV(kKVQ2));
-  //double *Q2 = new double(0.5);
   double *E  = new double(2.);
   double *xsec = new double(0.);
   double *xsec_anti = new double(0.);
@@ -80,27 +78,22 @@ double LARNCGammaXSec::XSec(const Interaction * interaction, KinePhaseSpace_t /*
   int *ndiag = new int(0);
   
   dxsec_(E, W, Q2, nucl, ndiag, xsec, xsec_anti);
-  //double EGamma =   interaction->KinePtr()->GetKV(kKVEGamma);
-  //double PhiGamma = interaction->KinePtr()->GetKV(kKVPhiGamma);
   LOG("LARNCGammaXSec", pWARN)  << "W        " << W[0];
   LOG("LARNCGammaXSec", pWARN)  << "Q2       " << Q2[0];
   LOG("LARNCGammaXSec", pWARN)  << "neutrino     xsec " << xsec[0];
   LOG("LARNCGammaXSec", pWARN)  << "antineutrino xsec " << xsec_anti[0];
-  //LOG("LARNCGammaXSec", pWARN)  << "EGamma   " << EGamma;
-  //LOG("LARNCGammaXSec", pWARN)  << "PhiGamma " << PhiGamma;
-  //TF2 function("(TMath::Gauss(y,1.232,200)+TMath::Gauss(y,1.5,500))/(1+x/1.)^2");
- 
-  //return function.Eval(Q2,W);
-  
-  //gNeutrinoInit = (TLorentzVector*)initialstate->GetProbeP4()->Clone();
-  //gTargetInit   = (TLorentzVector*)initialstate->GetTgtP4()->Clone();
- 
 
-  //TensorDim4* output1, output2;
-  //AmplitudeNum(interaction, output1, output2);
-  
+  double ret = xsec;
 
-  return xsec[0]; // For now return 1
+  delete W;
+  delete Q2;
+  delete E;
+  delete xsec;    
+  delete xsec_anti;
+  delete nucl;
+  delete ndiag;
+
+  return ret;
 }
 //_____________________________________________________________________________
 double LARNCGammaXSec::Integral(const Interaction * interaction) const
