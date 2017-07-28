@@ -390,13 +390,13 @@ ifeq ($(strip $(GCC_GE_4_1_0)), YES)
   CXXFLAGS += -Wno-strict-aliasing -ffriend-injection
 endif
 LDFLAGS       = -g -Wl,--no-as-needed -Wl,--no-undefined
-SOFLAGS       = -shared
+SOFLAGS       = -shared -fpic
 DllSuf       := so
 DllLinkSuf   := 
 StaticLibSuf := a
 ObjSuf       := o
 SrcSuf       := cxx
-FORT         := g77
+FORT         := gfortran
 FORTOPTS     := $(FFLAGS) -g -c -O -DLINUX $(F77INCS) -fno-second-underscore
 RANLIB       := ranlib
 SOCMD         = $(LD)
