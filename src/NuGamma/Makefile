@@ -15,10 +15,13 @@ include $(GENIE)/src/make/Make.include
 PACKAGE           = NuGamma
 DICTIONARY        = _ROOT_DICT_NuGamma
 LIBNAME           = libGNuGamma
-EXTRA_EXT_LIBS    =
+EXTRA_EXT_LIBS    = cgaus.f cs.f90
 
-all     : rootcint lib lib-link
+all     : rootcint lib lib-link cs.o
 install : install-inc install-lib
+
+cs.o: cs.f90 diag.f90 cgaus.f
+	$(FORT) -c cs.f90 cgaus.f -fPIC
 
 # Include standard package makefile targets
 #

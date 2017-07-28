@@ -353,7 +353,7 @@ void RESNCGammaGenerator::AddFinalStateNeutrino(GHepRecord * evrec) const
 //___________________________________________________________________________
 double RESNCGammaGenerator::ComputeMaxXSec (const Interaction * in) const{
   (void)in;
-  return 3.;
+  return 400.;
 }
 
 //___________________________________________________________________________

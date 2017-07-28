@@ -36,6 +36,11 @@ using namespace genie::constants;
 using namespace genie::utils;
 //using namespace utils::TensorUtils;
 
+extern "C"{
+  double dxsec_(double* E, double* W, double* Q2, int* nucl, int* ndiag,
+                double* xsec, double* xsec_anti);
+}
+
 //____________________________________________________________________________
 LARNCGammaXSec::LARNCGammaXSec() :
   XSecAlgorithmI("genie::LARNCGammaXSec")
@@ -65,12 +70,22 @@ double LARNCGammaXSec::XSec(const Interaction * interaction, KinePhaseSpace_t /*
   InitialState* initialstate =  interaction->InitStatePtr();
   Kinematics* kine = interaction->KinePtr();  
   
-  double W =        interaction->KinePtr()->GetKV(kKVW);
-  double Q2 =       interaction->KinePtr()->GetKV(kKVQ2);
+  double *W  = new double(interaction->KinePtr()->GetKV(kKVW));
+  double *Q2 = new double(interaction->KinePtr()->GetKV(kKVQ2));
+  //double *Q2 = new double(0.5);
+  double *E  = new double(2.);
+  double *xsec = new double(0.);
+  double *xsec_anti = new double(0.);
+  int *nucl = new int(1);
+  int *ndiag = new int(0);
+  
+  dxsec_(E, W, Q2, nucl, ndiag, xsec, xsec_anti);
   //double EGamma =   interaction->KinePtr()->GetKV(kKVEGamma);
   //double PhiGamma = interaction->KinePtr()->GetKV(kKVPhiGamma);
-  LOG("LARNCGammaXSec", pWARN)  << "W        " << W;
-  LOG("LARNCGammaXSec", pWARN)  << "Q2       " << Q2;
+  LOG("LARNCGammaXSec", pWARN)  << "W        " << W[0];
+  LOG("LARNCGammaXSec", pWARN)  << "Q2       " << Q2[0];
+  LOG("LARNCGammaXSec", pWARN)  << "neutrino     xsec " << xsec[0];
+  LOG("LARNCGammaXSec", pWARN)  << "antineutrino xsec " << xsec_anti[0];
   //LOG("LARNCGammaXSec", pWARN)  << "EGamma   " << EGamma;
   //LOG("LARNCGammaXSec", pWARN)  << "PhiGamma " << PhiGamma;
   //TF2 function("(TMath::Gauss(y,1.232,200)+TMath::Gauss(y,1.5,500))/(1+x/1.)^2");
@@ -85,7 +100,7 @@ double LARNCGammaXSec::XSec(const Interaction * interaction, KinePhaseSpace_t /*
   //AmplitudeNum(interaction, output1, output2);
   
 
-  return 1; // For now return 1
+  return xsec[0]; // For now return 1
 }
 //_____________________________________________________________________________
 double LARNCGammaXSec::Integral(const Interaction * interaction) const
