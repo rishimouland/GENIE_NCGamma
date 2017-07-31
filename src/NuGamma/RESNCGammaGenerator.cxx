@@ -138,8 +138,6 @@ void RESNCGammaGenerator::ThrowKinematics(GHepRecord * evrec) const{
   //   space the max xsec is irrelevant
   double xsec_max = this->MaxXSec(evrec);
 
-  // Set W range length
-  double dW   = range_W.max - range_W.min;
   
   double xsec = -1;
 
@@ -151,7 +149,22 @@ void RESNCGammaGenerator::ThrowKinematics(GHepRecord * evrec) const{
   double gQ2       = 0; // momentum transfer
   double gEGamma   = 0; // energy of the photon in LAB FRAME
   double gPhiGamma = 0; // cosine of the angle between the scattering plane and the photon emission in LAB FRAME
-
+  double separationW = 1.4;
+  Range1D_t range_Wsep[2] = {range_W,range_W};
+  range_Wsep[0].max = separationW;
+  range_Wsep[1].min = separationW;
+  // Set W range length
+  double dW[2]   = {range_Wsep[0].max - range_Wsep[0].min,
+                    range_Wsep[1].max - range_Wsep[1].min};
+    
+  double area[2] = {(separationW - range_W.min) * 200.,
+                    (range_W.max - separationW) * 30.,};
+  double totalarea= area[0]+area[1];
+  double trialarea = rnd->RndKine().Rndm() * totalarea;
+  int narea=-1;
+  if(trialarea< area[0]) narea = 0;
+  else                   narea = 1;
+  
   while(1) {
     iter++;
     if(iter > kRjMaxIterations) {
@@ -167,7 +180,7 @@ void RESNCGammaGenerator::ThrowKinematics(GHepRecord * evrec) const{
     
     // We firstly use a (simple) rejection method to choose a value for W
 
-    gW = range_W.min + dW * rnd->RndKine().Rndm();
+    gW = range_Wsep[narea].min + dW[narea] * rnd->RndKine().Rndm();
 
     LOG("RESNCgKinematic", pINFO) << "Trying: W        = " << gW;	   
 
