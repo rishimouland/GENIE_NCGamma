@@ -1558,6 +1558,7 @@
         do i=1,np
          f1(i)=fkernel_rho(x(i))
         ! print *,f1(i)
+	! print *,'@~@~@~@~@~@~@~@ USING WIDTH CODE @~@~@~@~@~@~@~@~@'
         end do
         ! stop
         call DRG20r(pmin,pmax,n,f1,rho)
