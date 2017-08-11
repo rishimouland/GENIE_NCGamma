@@ -92,7 +92,13 @@ double LARNCGammaXSec::XSec(const Interaction * interaction, KinePhaseSpace_t /*
   //LOG("LARNCGammaXSec", pWARN)  << "neutrino     xsec " << xsec[0];
   //LOG("LARNCGammaXSec", pWARN)  << "antineutrino xsec " << xsec_anti[0];
 
-  double ret = (*xsec);
+  double ret = 0;
+
+  if ( interaction->InitState().ProbePdg() > 0 ){
+	ret = (*xsec);
+  } else {
+	ret = (*xsec_anti);
+  }
 
   delete W;
   delete Q2;

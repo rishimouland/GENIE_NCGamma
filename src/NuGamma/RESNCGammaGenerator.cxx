@@ -14,6 +14,7 @@
 
 #include <TMath.h>
 #include <cstdlib>
+#include <string>
 
 #include "Algorithm/AlgConfigPool.h"
 
@@ -45,10 +46,18 @@
 #include "Utils/Range1.h"
 #include "Utils/KineUtils.h"
 
+#include <iostream>
+#include <fstream>
+#include <sstream>
+
 using namespace genie;
 using namespace genie::constants;
 using namespace genie::controls;
 using namespace TMath;
+using namespace std;
+using std::string;
+
+string ToString (double k);
 
 
 //TFile* RESNCGammaGenerator::FileOfEvents = new TFile("file.root", "RECREATE");
@@ -232,16 +241,22 @@ double dW = range_W.max - range_W.min;
     // Check that we lie below (naive) envelope
     double xsec_test = xsec_max * rnd->RndKine().Rndm();
     double env_height = 0;
+    double xsec_max_W = 0;
     
-    if (gW > 1.232){
-	double xsec_max_W = xsec_max * ( 1 - 0.8 * (1/( range_W.max - 1.232 )) * ( gW - 1.232 ) );
-	env_height = xsec_max_W * ( 1 - 0.8 * (1/range_Q2.max) * gQ2 );
-	env_accept = (xsec_test < env_height);
+    if (gW > 1.208){
+	xsec_max_W = xsec_max * ( 1 - 0.5 * (1/( range_W.max - 1.208 )) * ( gW - 1.208 ) );
     } else {
-	double xsec_max_W = xsec_max * ( 1 + 0.8 * (1/1.232) * ( gW - 1.232 ) );
-	env_height = xsec_max_W * ( 1 - 0.8 * (1/range_Q2.max) * gQ2 );
-	env_accept = (xsec_test < env_height);
+	xsec_max_W = xsec_max * ( 1 + 0.5 * (1/1.208) * ( gW - 1.208 ) );
     }
+
+    if (gQ2 < 1){
+	env_height = xsec_max_W;
+    } else {
+	env_height = xsec_max_W * ( 1 - 0.4 * (1/(range_Q2.max-1)) * (gQ2-1) );
+    }
+
+    env_height = xsec_max;
+    env_accept = ( xsec_test < env_height );
     
 //    env_accept = true;
 
@@ -256,10 +271,15 @@ double dW = range_W.max - range_W.min;
 	xsec = fXSecModel->XSec(interaction);
 	if ( xsec > env_height ) {
 		LOG("RESNCgKinematic", pWARN) << "@~@~@~@~@~@~@~@~@~@ CROSS SECTION ABOVE ENVELOPE!! @~@~@~@~@~@~@~@~@~@";
+		ofstream failfile;
+		failfile.open ("failfile.txt");
+		string failstring = "Envelope was lower than xsec. Q2 = " + ToString(gQ2) + " , W = " + ToString(gW) + " , Theta = " + ToString(gThetaGamma) + " , Phi = " + ToString(gPhiGamma) + ". xsec = " + ToString(xsec) + ". env_height = " + ToString(env_height); 
+		failfile << failstring.c_str();
+		failfile.close();
 	}
-//	LOG("RESNCgKinematic", pINFO) << "env_height = " << env_height;
-//	LOG("RESNCgKinematic", pINFO) << "xsec_test = " << xsec_test;
-//	LOG("RESNCgKinematic", pINFO) << "xsec = " << xsec;
+	LOG("RESNCgKinematic", pINFO) << "env_height = " << env_height;
+	LOG("RESNCgKinematic", pINFO) << "xsec = " << xsec;
+	LOG("RESNCgKinematic", pINFO) << "xsec_test = " << xsec_test;
 	
 	if ( xsec_test < xsec){
 		
@@ -383,39 +403,56 @@ void RESNCGammaGenerator::AddFinalStateNeutrino(GHepRecord * evrec) const
 
 //___________________________________________________________________________
 double RESNCGammaGenerator::ComputeMaxXSec (const Interaction * interaction) const{
-  (void)interaction;
+//  (void)interaction;
 //  return 60.;
 
 // Naively find the max xsec, assuming it lies near Q2=0 and W=1.232
 
   LOG("RESNCgKinematic", pINFO) << "Calculating max xsec";
 
-//double max_xsec = 0;
+double max_xsec = 0;
+int iter = 0;
+double maxQ2 = 0;
+double maxW = 0;
+double maxTheta = 0;
+double maxPhi = 0;
 
-//	for (int i=0; i<11; i++){
-//	  for (int j=0; j<11; j++){
-//	    for (int k=0; k<11; k++){
-//	      for (int l=0; l<11; l++){
-//		interaction->KinePtr()->SetQ2(i*0.02);
-//		interaction->KinePtr()->SetW(1.232 + 0.01*(j-5));
-//		((LARNCGammaXSec*)fXSecModel)->SetThetaPhoton(k * (TMath::Pi()/10));
-//		((LARNCGammaXSec*)fXSecModel)->SetPhiPhoton( (l-5) * (TMath::Pi()/5) );
-//		double xsec = fXSecModel->XSec(interaction);
-//		if ( xsec > max_xsec ){
-//			max_xsec = xsec;
-//		}
-//		interaction->KinePtr()->ClearRunningValues();
-//	      }
-//	    }
-//	  }
-//	}
+	for (int i=0; i<100; i++){
+	  for (int j=0; j<1; j++){
+	    for (int k=0; k<1; k++){
+	      for (int l=0; l<1; l++){
+		interaction->KinePtr()->SetQ2(0.001 + i*0.05);
+		interaction->KinePtr()->SetW(1.232 + 0.0001*j);
+		((LARNCGammaXSec*)fXSecModel)->SetThetaPhoton(0.7);
+		((LARNCGammaXSec*)fXSecModel)->SetPhiPhoton( 1.4 );
+		double xsec = fXSecModel->XSec(interaction);
+		if ( xsec > max_xsec ){
+			max_xsec = xsec;
+			maxQ2 = 0.001 + i*0.01;
+			maxW = 1.805 + 0.0001*j;
+			maxTheta = k * (TMath::Pi()/10);
+			maxPhi =  (l-5) * (TMath::Pi()/5) ;
+		}
+		interaction->KinePtr()->ClearRunningValues();
+		iter++;
+		LOG("RESNCgKinematic", pINFO) << "Iteration " << iter << " of " << 1*401*11*11;
+		LOG("RESNCgKinematic", pINFO) << "At ( Q2 , W , Theta , Phi ) = ( " << 0.001 + i*0.01 << " , " << 1.805 + 0.0001*j << " , " << k * (TMath::Pi()/10) << " , " <<  (l-5) * (TMath::Pi()/5)  << " )";
+		LOG("RESNCgKinematic", pINFO) << "Xsec so far:  " << xsec;
+		LOG("RESNCgKinematic", pINFO) << "At ( Q2 , W , Theta , Phi ) = ( " << maxQ2 << " , " << maxW << " , " << maxTheta << " , " << maxPhi << " )";
+	      }
+	    }
+	  }
+	}
 
 //max_xsec = 1.2 * max_xsec;
 
-//LOG("RESNCgKinematic", pINFO) << "max xsec: " << max_xsec;
-
-//return max_xsec;
-return 17.4; // Correct for 1 GeV
+LOG("RESNCgKinematic", pFATAL) << "max xsec: " << max_xsec;
+exit(0);
+return max_xsec;
+//return 28.9127; // Correct for 1 GeV neutrino
+//return 50;
+//return 5;
+//return 24.3454;
 }
 
 //___________________________________________________________________________
@@ -444,4 +481,11 @@ void RESNCGammaGenerator::AddTargetRemnant(GHepRecord * evrec) const
   LOG("RESNCgKinematic", pINFO) << "Adding final state nucleus";
 
 
+}
+//_________________________________________________________________________________
+string ToString(double k)
+{
+  stringstream stream;
+  stream << k;
+  return stream.str();
 }
