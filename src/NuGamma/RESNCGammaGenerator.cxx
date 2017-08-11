@@ -18,6 +18,7 @@
 #include "Algorithm/AlgConfigPool.h"
 
 #include "NuGamma/RESNCGammaGenerator.h"
+#include "NuGamma/LARNCGammaXSec.h"
 
 #include "EVGCore/EVGThreadException.h"
 #include "EVGCore/EventGeneratorI.h"
@@ -49,16 +50,22 @@ using namespace genie::constants;
 using namespace genie::controls;
 using namespace TMath;
 
+
+//TFile* RESNCGammaGenerator::FileOfEvents = new TFile("file.root", "RECREATE");
+//TTree* RESNCGammaGenerator::TreeOfEvents = new TTree("events");
+  
 //___________________________________________________________________________
 RESNCGammaGenerator::RESNCGammaGenerator() :
 KineGeneratorWithCache("genie::RESNCGammaGenerator")
 {
-  Gamma             = new TLorentzVector();
-  OutgoingNucleon   = new TLorentzVector();
-  OutgoingNeutrino  = new TLorentzVector();
-  Resonance         = new TLorentzVector();
-
-
+  Gamma             = new TLorentzVector(0,0,0,0);
+  OutgoingNucleon   = new TLorentzVector(0,0,0,0);
+  OutgoingNeutrino  = new TLorentzVector(0,0,0,0);
+  Resonance	    = new TLorentzVector(0,0,0,0);
+//  FileOfEvents->cd();
+//  TreeOfEvents->SetBranchAddress(Q);
+//  TreeOfEvents->SetBranchAddress(Q);
+//  TreeOfEvents->SetBranchAddress(Q);
 
   
 }
@@ -135,35 +142,38 @@ void RESNCGammaGenerator::ThrowKinematics(GHepRecord * evrec) const{
   //   cache. Throw an exception and quit the evg thread if a non-positive
   //   value is found.
   //   If the kinematics are generated uniformly over the allowed phase
-  //   space the max xsec is irrelevant
-  double xsec_max = this->MaxXSec(evrec);
-
+  //   space the max xsec is irrelevant  
+  double xsec_max = this->ComputeMaxXSec(interaction);
+  
   
   double xsec = -1;
 
   unsigned int iter = 0;
-  bool accept = false;
+  bool env_accept = false;
 
   // Variables that we are throwing in the rejection method
-  double gW        = 0; // hadronic invariant mass
-  double gQ2       = 0; // momentum transfer
-  double gEGamma   = 0; // energy of the photon in LAB FRAME
-  double gPhiGamma = 0; // cosine of the angle between the scattering plane and the photon emission in LAB FRAME
-  double separationW = 1.4;
-  Range1D_t range_Wsep[2] = {range_W,range_W};
-  range_Wsep[0].max = separationW;
-  range_Wsep[1].min = separationW;
+  double gW        = -900; // hadronic invariant mass
+  double gQ2       = -900; // momentum transfer
+  double gEGamma   = -900; // energy of the photon in LAB FRAME
+  double gPhiGamma = -900; // cosine of the angle between the scattering plane and the photon emission in LAB FRAME
+  double gThetaGamma = -900;
+//  double separationW = 1.4;
+//  Range1D_t range_Wsep[2] = {range_W,range_W};
+//  range_Wsep[0].max = separationW;
+//  range_Wsep[1].min = separationW;
   // Set W range length
-  double dW[2]   = {range_Wsep[0].max - range_Wsep[0].min,
-                    range_Wsep[1].max - range_Wsep[1].min};
+//  double dW[2]   = {range_Wsep[0].max - range_Wsep[0].min,
+//                    range_Wsep[1].max - range_Wsep[1].min};
     
-  double area[2] = {(separationW - range_W.min) * 200.,
-                    (range_W.max - separationW) * 30.,};
-  double totalarea= area[0]+area[1];
-  double trialarea = rnd->RndKine().Rndm() * totalarea;
-  int narea=-1;
-  if(trialarea< area[0]) narea = 0;
-  else                   narea = 1;
+//  double area[2] = {(separationW - range_W.min) * 200.,
+//                    (range_W.max - separationW) * 30.,};
+//  double totalarea= area[0]+area[1];
+//  double trialarea = rnd->RndKine().Rndm() * totalarea;
+//  int narea=-1;
+//  if(trialarea< area[0]) narea = 0;
+//  else                   narea = 1;
+
+double dW = range_W.max - range_W.min;
   
   while(1) {
     iter++;
@@ -180,7 +190,8 @@ void RESNCGammaGenerator::ThrowKinematics(GHepRecord * evrec) const{
     
     // We firstly use a (simple) rejection method to choose a value for W
 
-    gW = range_Wsep[narea].min + dW[narea] * rnd->RndKine().Rndm();
+    gW = range_W.min + dW * rnd->RndKine().Rndm();
+//	gW = 1.232;
 
     LOG("RESNCgKinematic", pINFO) << "Trying: W        = " << gW;	   
 
@@ -190,12 +201,13 @@ void RESNCGammaGenerator::ThrowKinematics(GHepRecord * evrec) const{
     // Given chosen gW, find the range of Q2		
     
     Range1D_t range_Q2 = kps.Q2Lim_W();
+    LOG("RESNCgKinematic", pINFO) << "Q2 min = " << range_Q2.min;
     double dQ2   = range_Q2.max - range_Q2.min;
 
 //    if( range_Q2.min > 0.25 || range_Q2.max < 0.25){
 //	break;
 //    }
-
+//  FileOfEvents->cd();
     gQ2 = range_Q2.min + dQ2 * rnd->RndKine().Rndm();
 //    gQ2 = 0.25;
 
@@ -203,31 +215,56 @@ void RESNCGammaGenerator::ThrowKinematics(GHepRecord * evrec) const{
     interaction->KinePtr()->SetQ2(gQ2);
   
     // Computing cross section for the current kinematics
-    xsec = fXSecModel->XSec(interaction);
+//    xsec = fXSecModel->XSec(interaction);
 
-
+//    TreeOfEvent->Fill();
     // Randomly pick point for rejection method
-    double tQ2W =  xsec_max * rnd->RndKine().Rndm();
+//    double tQ2W =  xsec_max * rnd->RndKine().Rndm();
     //This is probably something I will need to implement?
     //this->AssertXSecLimits(interaction, xsec, xsec_max);
-    LOG("RESNCgKinematic", pINFO) << "tQ2W = " << tQ2W;
-    LOG("RESNCgKinematic", pINFO) << "xsec = " << xsec;
+//    LOG("RESNCgKinematic", pINFO) << "tQ2W = " << tQ2W;
+//    LOG("RESNCgKinematic", pINFO) << "xsec = " << xsec;
     
-    if(xsec > xsec_max) {
-	LOG("RESNCgKinematic", pWARN) << "@~@~@~@~@~@ WARNING: MAX XSEC SET TOO LOW! @~@~@~@~@~@~@";
+//    if(xsec > xsec_max) {
+//	LOG("RESNCgKinematic", pWARN) << "@~@~@~@~@~@ WARNING: MAX XSEC SET TOO LOW! @~@~@~@~@~@~@";
+//   }
+
+    // Check that we lie below (naive) envelope
+    double xsec_test = xsec_max * rnd->RndKine().Rndm();
+    double env_height = 0;
+    
+    if (gW > 1.232){
+	double xsec_max_W = xsec_max * ( 1 - 0.8 * (1/( range_W.max - 1.232 )) * ( gW - 1.232 ) );
+	env_height = xsec_max_W * ( 1 - 0.8 * (1/range_Q2.max) * gQ2 );
+	env_accept = (xsec_test < env_height);
+    } else {
+	double xsec_max_W = xsec_max * ( 1 + 0.8 * (1/1.232) * ( gW - 1.232 ) );
+	env_height = xsec_max_W * ( 1 - 0.8 * (1/range_Q2.max) * gQ2 );
+	env_accept = (xsec_test < env_height);
     }
     
-    accept = (tQ2W < xsec);
+//    env_accept = true;
 
-    // If the generated kinematics are accepted, we randomly generate the photon
-    // kinematics, and finish
-    if(accept) {
-
-	// We calculate the photon 4-momentum in the lab frame. This involves
-	// working in the hadronic centre of mass frame and disregarding any
-	// polarisation effects, thus allowing the photons to be generated
-	// isotropically. We then boost back to the lab frame
-
+    // If the generated kinematics are accepted, we generate the photon
+    // kinematics based on Luis code
+    if(env_accept) {
+   
+	gThetaGamma = acos( 2 * rnd->RndKine().Rndm() -1 );
+ 	gPhiGamma = ( 2 * rnd->RndKine().Rndm() -1 ) * TMath::Pi();
+	((LARNCGammaXSec*)fXSecModel)->SetThetaPhoton(gThetaGamma);
+	((LARNCGammaXSec*)fXSecModel)->SetPhiPhoton(gPhiGamma);
+	xsec = fXSecModel->XSec(interaction);
+	if ( xsec > env_height ) {
+		LOG("RESNCgKinematic", pWARN) << "@~@~@~@~@~@~@~@~@~@ CROSS SECTION ABOVE ENVELOPE!! @~@~@~@~@~@~@~@~@~@";
+	}
+//	LOG("RESNCgKinematic", pINFO) << "env_height = " << env_height;
+//	LOG("RESNCgKinematic", pINFO) << "xsec_test = " << xsec_test;
+//	LOG("RESNCgKinematic", pINFO) << "xsec = " << xsec;
+	
+	if ( xsec_test < xsec){
+		
+	
+        
 	double TgtNucM = -1;
 
 	if(init_state.IsNuN()) {
@@ -237,22 +274,6 @@ void RESNCGammaGenerator::ThrowKinematics(GHepRecord * evrec) const{
 	} else {
 		LOG("RESNCgKinematic", pWARN) << "*** Hit nucleon not a nucleon???";
 	}
-
-	// A quick check
-
-	std::cout << "Lower limit of range of W: " << gW << std::endl;
-	std::cout << "Hit nucleon rest mass: " << TgtNucM << std::endl;
-	
-	// With nucleon rest mass determined, easy now to calculate hadr frame 4-momentum
-	// In the hadr frame (i.e. rest frame of resonance):
-
-	double EGamma_Hadr = ( Power(gW,2) - Power(TgtNucM,2) ) / (2 * gW);
-	double CosThetaGamma_Hadr = ( 2 * rnd->RndKine().Rndm() ) -1;
-	double PhiGamma_Hadr = 2*TMath::Pi()* rnd->RndKine().Rndm();
-	Gamma->SetPxPyPzE( EGamma_Hadr * Sqrt(1 - Power(CosThetaGamma_Hadr,2)) * Cos(PhiGamma_Hadr) ,
-                           EGamma_Hadr * Sqrt(1 - Power(CosThetaGamma_Hadr,2)) * Sin(PhiGamma_Hadr) ,
-                           EGamma_Hadr * CosThetaGamma_Hadr ,
-                           EGamma_Hadr );
 
 	// We now need to determine the 4-momentum of the resonance, in the lab frame
 
@@ -293,30 +314,17 @@ void RESNCGammaGenerator::ThrowKinematics(GHepRecord * evrec) const{
 
 	Resonance->Boost(HitNucP4.BoostVector());
 
-	// Finally, we can boost the photon 4-momentum by the resonance velocity,
-	// giving us the photon 4-momentum in the lab frame
+	// Now with the resonance 4-mom, we can calculate the photon 4-momentum
 
-	Gamma->Boost(Resonance->BoostVector());
+	gEGamma = 0.5 * ( Resonance->Dot(*Resonance) - Power(TgtNucM,2) ) * (1 / ( Resonance->E() - Resonance->Px() * Sin(gThetaGamma) * Cos(gPhiGamma) - Resonance->Py() * Sin(gThetaGamma) * Sin(gPhiGamma) - Resonance->Pz() * Cos(gThetaGamma) ) );
 
-	// From this 4-momentum, we calculate the energy and phi angle of the
-	// photon, in the lab frame
-
-	gEGamma = Gamma->E();
-	gPhiGamma = ATan2(Gamma->Y(),Gamma->X());
-
-	if(gPhiGamma < 0) {
-		gPhiGamma = gPhiGamma + 2*Pi();
-	}
-
-	// We also calculate the outgoing nucleon 4-momentum
+	Gamma->SetPxPyPzE( gEGamma * Sin(gThetaGamma) * Cos(gPhiGamma) , gEGamma * Sin(gThetaGamma) * Sin(gPhiGamma) , gEGamma * Cos(gThetaGamma) , gEGamma );
 
 	OutgoingNucleon->SetPxPyPzE( Resonance->Px() - Gamma->Px() , Resonance->Py() - Gamma->Py() , Resonance->Pz() - Gamma->Pz() , Resonance->E() - Gamma->E() );
 
-	// and also the outgoing neutrino
-
 	TLorentzVector * ProbeP4Lab = init_state.GetProbeP4(kRfLab);
 	OutgoingNeutrino->SetPxPyPzE( ProbeP4Lab->Px() + HitNucP4.Px() - Resonance->Px() , ProbeP4Lab->Py() + HitNucP4.Py() - Resonance->Py() , ProbeP4Lab->Pz() + HitNucP4.Pz() - Resonance->Pz() , ProbeP4Lab->E() + HitNucP4.E() - Resonance->E() );
-        
+	
       LOG("RESNCgKinematic", pINFO) << "Selected: W        = " << gW;
       LOG("RESNCgKinematic", pINFO) << "          Q2       = " << gQ2;
       LOG("RESNCgKinematic", pINFO) << "          EGamma   = " << gEGamma;
@@ -334,6 +342,7 @@ void RESNCGammaGenerator::ThrowKinematics(GHepRecord * evrec) const{
       interaction->KinePtr()->ClearRunningValues();
 
       return;
+	}
       }
   } 
 }
@@ -373,9 +382,40 @@ void RESNCGammaGenerator::AddFinalStateNeutrino(GHepRecord * evrec) const
 }
 
 //___________________________________________________________________________
-double RESNCGammaGenerator::ComputeMaxXSec (const Interaction * in) const{
-  (void)in;
-  return 200.;
+double RESNCGammaGenerator::ComputeMaxXSec (const Interaction * interaction) const{
+  (void)interaction;
+//  return 60.;
+
+// Naively find the max xsec, assuming it lies near Q2=0 and W=1.232
+
+  LOG("RESNCgKinematic", pINFO) << "Calculating max xsec";
+
+//double max_xsec = 0;
+
+//	for (int i=0; i<11; i++){
+//	  for (int j=0; j<11; j++){
+//	    for (int k=0; k<11; k++){
+//	      for (int l=0; l<11; l++){
+//		interaction->KinePtr()->SetQ2(i*0.02);
+//		interaction->KinePtr()->SetW(1.232 + 0.01*(j-5));
+//		((LARNCGammaXSec*)fXSecModel)->SetThetaPhoton(k * (TMath::Pi()/10));
+//		((LARNCGammaXSec*)fXSecModel)->SetPhiPhoton( (l-5) * (TMath::Pi()/5) );
+//		double xsec = fXSecModel->XSec(interaction);
+//		if ( xsec > max_xsec ){
+//			max_xsec = xsec;
+//		}
+//		interaction->KinePtr()->ClearRunningValues();
+//	      }
+//	    }
+//	  }
+//	}
+
+//max_xsec = 1.2 * max_xsec;
+
+//LOG("RESNCgKinematic", pINFO) << "max xsec: " << max_xsec;
+
+//return max_xsec;
+return 17.4; // Correct for 1 GeV
 }
 
 //___________________________________________________________________________

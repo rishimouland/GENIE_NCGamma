@@ -96,7 +96,7 @@
     !  include 'deltamedium.f90'
 
       !************************************************************* 
-      function dxsec(Enu, W, Qsq, nucl, nd, dsigmaneutrino, dsigmaantineutrino)
+      function dxsec(Enu, W, Qsq, phi, theta, nucl, nd, dsigmaneutrino, dsigmaantineutrino)
         use parameter
         implicit real*8 (a,b,d-h,o-y)
         implicit complex*16 (c)
@@ -114,7 +114,7 @@
         !      print *,'Selcet the diagram: tatal(0),N(1),Delta(2),Pi(3),D13(1520)(4),P11(1440)(5),S11(1535)(6),no resoances(7),Delat+N(8)'
         !      read(*,*),ndiag
         ndiag = nd
-        print*, 'ndiag',ndiag
+        ! print*, 'ndiag',ndiag
         
         !        print *,'input fca5p33'
         !        read(*,*),fca5p33
@@ -197,7 +197,7 @@
         !        call DSG20r(tq2min,tq2max, 1,x2,np2)
         !           do j=1,np2
         ! tq2=0. ! x2(j)
-        call dcross2(2,cdc)
+        call dcross2(2,cdc, phi, theta)
         !             cf2(j)=cdc
         !           enddo
         
@@ -219,7 +219,7 @@
       END function dxsec
       
 !*********************Four integration**************************
-      SUBROUTINE dcross2(n,cdc)
+      SUBROUTINE dcross2(n,cdc, phi, theta)
         use parameter
        implicit real*8 (a,b,d-h,o-z)
        implicit complex*16 (c)
@@ -228,16 +228,18 @@
        real*8,external :: fs
        complex*16,external :: ckernel
        
-       do i=1,n 
-        js(i)=nprecise
-       enddo
+!       do i=1,n 
+!        js(i)=nprecise
+!       enddo
     !    js(2)=8       ! phi_qf  
     !    js(1)=8       ! theta_kp
      !   JS(3)=8       ! xqf0 
      !   JS(4)=8       ! xqf0 
 
-	CALL FGAUS(n,JS,X,FS,ckernel,cs)
-        cdc=cs
+	!CALL FGAUS(n,JS,X,FS,ckernel,cs)
+       x(1)=phi
+       x(2)=theta
+       cdc=ckernel(n, x)
        RETURN
        END SUBROUTINE
 
@@ -331,27 +333,27 @@
         sh=aint(stime/3600.)
         sm=aint(mod(stime,3600.)/60.)
         ss=mod(stime,60.)
-        write(*,200)'The time of calculating is:',sh,'h ',    &
-           sm,'m', ss,'s'     
-        write(8,200)'#The time of calculating is:',sh,'h ',    &
-           sm,'m', ss,'s'  
-        print'("Time = ",f10.3," seconds.")',stime
+        ! write(*,200)'The time of calculating is:',sh,'h ',    &
+        !    sm,'m', ss,'s'     
+        ! write(8,200)'#The time of calculating is:',sh,'h ',    &
+        !    sm,'m', ss,'s'  
+        ! print'("Time = ",f10.3," seconds.")',stime
 200     Format(a,F5.0,a,F3.0,a,F7.4,a)
 
-        if(ndiag==1.and.nucleon==1) then
-         print *,'cs_compton_proton.txt'
-        else if(ndiag==1.and.nucleon==-1)then
-         print *,'cs_compton_neutron.txt'
-        else if(ndiag==2) then
-         print *,'cs_delta.txt'
-        else if(ndiag==3) then
-         print *,'cs_pie.txt'
-        else if(ndiag==0.and.nucleon==1) then
-         print *,'cs_total(p).txt'
-        else if(ndiag==0.and.nucleon==-1) then
-         print *,'cs_total(n).txt'    
+        ! if(ndiag==1.and.nucleon==1) then
+        !  print *,'cs_compton_proton.txt'
+        ! else if(ndiag==1.and.nucleon==-1)then
+        !  print *,'cs_compton_neutron.txt'
+        ! else if(ndiag==2) then
+        !  print *,'cs_delta.txt'
+        ! else if(ndiag==3) then
+        !  print *,'cs_pie.txt'
+        ! else if(ndiag==0.and.nucleon==1) then
+        !  print *,'cs_total(p).txt'
+        ! else if(ndiag==0.and.nucleon==-1) then
+        !  print *,'cs_total(n).txt'    
 
-        endif
+        ! endif
         if(neutrino==1) then
            print *,'neutrino'
         else if(neutrino==-1) then

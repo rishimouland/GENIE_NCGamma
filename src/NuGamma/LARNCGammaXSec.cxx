@@ -37,7 +37,7 @@ using namespace genie::utils;
 //using namespace utils::TensorUtils;
 
 extern "C"{
-  double dxsec_(double* E, double* W, double* Q2, int* nucl, int* ndiag,
+  double dxsec_(double* E, double* W, double* Q2, double* phi, double* theta, int* nucl, int* ndiag,
                 double* xsec, double* xsec_anti);
 }
 
@@ -45,7 +45,8 @@ extern "C"{
 LARNCGammaXSec::LARNCGammaXSec() :
   XSecAlgorithmI("genie::LARNCGammaXSec")
 {
-
+   fPhi = -999;
+   fTheta = -999;
 }
 //____________________________________________________________________________
 LARNCGammaXSec::LARNCGammaXSec(string config) :
@@ -63,30 +64,40 @@ double LARNCGammaXSec::XSec(const Interaction * interaction, KinePhaseSpace_t /*
 {
   if(! this -> ValidProcess    (interaction) ) return 0.;
   if(! this -> ValidKinematics (interaction) ) return 0.;
-  LOG("LARNCGammaXSec", pWARN)
-    << "*** Calculating the cross section";
-
+  //LOG("LARNCGammaXSec", pWARN)
+  //  << "*** Calculating the cross section";
+  if(fPhi < -998){
+	LOG("LARNCGammaXSec", pFATAL)  << "Photon phi not set!";
+  }
+  if(fTheta < -998){
+	LOG("LARNCGammaXSec", pFATAL)  << "Photon theta not set!";
+  }
   InitialState* initialstate =  interaction->InitStatePtr();
   Kinematics* kine = interaction->KinePtr();  
   
   double *W  = new double(interaction->KinePtr()->GetKV(kKVW));
   double *Q2 = new double(interaction->KinePtr()->GetKV(kKVQ2));
-  double *E  = new double(2.);
+  double *E  = new double(interaction->InitState().GetProbeP4(kRfLab)->E());
+  LOG("LARNCGammaXSec", pINFO)  << "Probe E: " << E[0];
   double *xsec = new double(0.);
   double *xsec_anti = new double(0.);
+  double *phi = new double(fPhi);
+  double *theta = new double(fTheta);
   int *nucl = new int(1);
   int *ndiag = new int(0);
   
-  dxsec_(E, W, Q2, nucl, ndiag, xsec, xsec_anti);
-  LOG("LARNCGammaXSec", pWARN)  << "W        " << W[0];
-  LOG("LARNCGammaXSec", pWARN)  << "Q2       " << Q2[0];
-  LOG("LARNCGammaXSec", pWARN)  << "neutrino     xsec " << xsec[0];
-  LOG("LARNCGammaXSec", pWARN)  << "antineutrino xsec " << xsec_anti[0];
+  dxsec_(E, W, Q2, phi, theta, nucl, ndiag, xsec, xsec_anti);
+  //LOG("LARNCGammaXSec", pWARN)  << "W        " << W[0];
+  //LOG("LARNCGammaXSec", pWARN)  << "Q2       " << Q2[0];
+  //LOG("LARNCGammaXSec", pWARN)  << "neutrino     xsec " << xsec[0];
+  //LOG("LARNCGammaXSec", pWARN)  << "antineutrino xsec " << xsec_anti[0];
 
   double ret = (*xsec);
 
   delete W;
   delete Q2;
+  delete phi;
+  delete theta;
   delete E;
   delete xsec;    
   delete xsec_anti;

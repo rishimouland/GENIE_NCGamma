@@ -1530,7 +1530,14 @@
        implicit real*8 (a,b,d-h,o-z)
        implicit complex*16 (c)
        real*8,external :: pcm   
-        
+       
+	! print *,'Masses?'
+	! print *,sma
+	! print *,smb
+	! print *,smc
+	! print *,smd
+	! print *,smr
+ 
        If(sp2.LE.(smc+smd+smb)**2) then
          pwid=0.d0 
        else 
@@ -1557,8 +1564,12 @@
         call DSG20r(pmin,pmax,n,x,np)
         do i=1,np
          f1(i)=fkernel_rho(x(i))
-        ! print *,f1(i)
-	! print *,'@~@~@~@~@~@~@~@ USING WIDTH CODE @~@~@~@~@~@~@~@~@'
+	 ! print *,'Iteration number: '
+	 ! print *,i
+	 ! print *,'x value is: '
+	 ! print *,x(i)
+	 ! print *,'f1 value is: '
+         ! print *,f1(i)
         end do
         ! stop
         call DRG20r(pmin,pmax,n,f1,rho)
