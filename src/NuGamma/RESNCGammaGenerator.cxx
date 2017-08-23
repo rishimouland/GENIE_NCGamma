@@ -124,6 +124,9 @@ void RESNCGammaGenerator::ThrowKinematics(GHepRecord * evrec) const{
   //-- Get the interaction from the GHEP record
   Interaction * interaction = evrec->Summary();
   interaction->SetBit(kISkipProcessChk);
+
+  // Set initial state
+  const InitialState & init_state = interaction -> InitState();
   
   //-- Compute the phase space limits for W, given input parameters, hit nucleon momentum
   const KPhaseSpace & kps = interaction->PhaseSpace();
@@ -143,8 +146,21 @@ void RESNCGammaGenerator::ThrowKinematics(GHepRecord * evrec) const{
       throw exception;
     }
 
-  // Set initial state
-  const InitialState & init_state = interaction -> InitState();
+  // We now check these limits against what we'd expect
+
+//  TLorentzVector * ProbeP4p = init_state.GetProbeP4(kRfLab);
+//  TLorentzVector ProbeP4 = *ProbeP4p;
+//  double W2UpperLimCheck = Power( init_state.Tgt().HitNucP4().M() , 2 ) + 2 * ProbeP4.Dot(init_state.Tgt().HitNucP4());
+//  double W2LowerLimCheck =  ProbeP4.E() + init_state.Tgt().HitNucP4().E() + Sqrt( 2 * ProbeP4.Dot(init_state.Tgt().HitNucP4()) + Power( init_state.Tgt().HitNucP4().M() , 2 ) - Power( ProbeP4.E() + init_state.Tgt().HitNucP4().E() , 2 ) ) ;
+
+//  std::cout << std::endl;
+//  std::cout << "Automatically calculated limits for W: " << std::endl;
+//  std::cout << "Lower limit: " << range_W.min << std::endl;
+//  std::cout << "Upper limit: " << range_W.max << std::endl;
+//  std::cout << std::endl;
+//  std::cout << "Check limits for W: " << std::endl;
+//  std::cout << "Lower limit: " << Sqrt(W2LowerLimCheck) << std::endl;
+//  std::cout << "Upper limit: " << Sqrt(W2UpperLimCheck) << std::endl;
 
   //-- For the subsequent kinematic selection with the rejection method:
   //   Calculate the max differential cross section or retrieve it from the
