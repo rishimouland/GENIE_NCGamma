@@ -52,9 +52,13 @@ namespace genie {
     void Configure(const Registry & config);
     void Configure(string config);
     void LoadConfig(void);
-
+    void SetPhiPhoton(double Phi){fPhi = Phi;};
+    double GetPhiPhoton(){return fPhi;};
+    void SetThetaPhoton(double Theta){fTheta = Theta;};
+    double GetThetaPhoton(){return fTheta;};
   private:
-    
+    double fPhi;
+    double fTheta;
     mutable TLorentzVector *gNeutrinoInit;
     mutable TLorentzVector *gTargetInit;
     mutable TLorentzVector *gHadronSystFinal;

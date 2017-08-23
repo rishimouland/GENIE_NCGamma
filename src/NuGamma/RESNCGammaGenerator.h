@@ -31,7 +31,7 @@ public :
   ~RESNCGammaGenerator();
   
   void ProcessEventRecord (GHepRecord * event_rec) const;
-  double ComputeMaxXSec (const Interaction * in) const;
+  double ComputeMaxXSec (const Interaction * interaction) const;
 private:
   void ThrowKinematics       (GHepRecord * event_rec) const;
   void AddPhoton             (GHepRecord * event_rec) const;
@@ -43,8 +43,9 @@ private:
   TLorentzVector* OutgoingNucleon;
   TLorentzVector* OutgoingNeutrino;
   TLorentzVector* Resonance;
-
-
+  
+//  static TFile* FileOfEvents;
+//  static TTree* TreeOfEvents;
   
   
 };

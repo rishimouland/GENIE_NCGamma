@@ -36,11 +36,17 @@ using namespace genie::constants;
 using namespace genie::utils;
 //using namespace utils::TensorUtils;
 
+extern "C"{
+  double dxsec_(double* E, double* W, double* Q2, double* phi, double* theta, int* nucl, int* ndiag,
+                double* xsec, double* xsec_anti);
+}
+
 //____________________________________________________________________________
 LARNCGammaXSec::LARNCGammaXSec() :
   XSecAlgorithmI("genie::LARNCGammaXSec")
 {
-
+   fPhi = -999;
+   fTheta = -999;
 }
 //____________________________________________________________________________
 LARNCGammaXSec::LARNCGammaXSec(string config) :
@@ -58,34 +64,53 @@ double LARNCGammaXSec::XSec(const Interaction * interaction, KinePhaseSpace_t /*
 {
   if(! this -> ValidProcess    (interaction) ) return 0.;
   if(! this -> ValidKinematics (interaction) ) return 0.;
-  LOG("LARNCGammaXSec", pWARN)
-    << "*** Calculating the cross section";
-  //  this->CalcAmplitude();
-
+  //LOG("LARNCGammaXSec", pWARN)
+  //  << "*** Calculating the cross section";
+  if(fPhi < -998){
+	LOG("LARNCGammaXSec", pFATAL)  << "Photon phi not set!";
+  }
+  if(fTheta < -998){
+	LOG("LARNCGammaXSec", pFATAL)  << "Photon theta not set!";
+  }
   InitialState* initialstate =  interaction->InitStatePtr();
   Kinematics* kine = interaction->KinePtr();  
   
-  double W =        interaction->KinePtr()->GetKV(kKVW);
-  double Q2 =       interaction->KinePtr()->GetKV(kKVQ2);
-  //double EGamma =   interaction->KinePtr()->GetKV(kKVEGamma);
-  //double PhiGamma = interaction->KinePtr()->GetKV(kKVPhiGamma);
-  LOG("LARNCGammaXSec", pWARN)  << "W        " << W;
-  LOG("LARNCGammaXSec", pWARN)  << "Q2       " << Q2;
-  //LOG("LARNCGammaXSec", pWARN)  << "EGamma   " << EGamma;
-  //LOG("LARNCGammaXSec", pWARN)  << "PhiGamma " << PhiGamma;
-  //TF2 function("(TMath::Gauss(y,1.232,200)+TMath::Gauss(y,1.5,500))/(1+x/1.)^2");
- 
-  //return function.Eval(Q2,W);
+  double *W  = new double(interaction->KinePtr()->GetKV(kKVW));
+  double *Q2 = new double(interaction->KinePtr()->GetKV(kKVQ2));
+  double *E  = new double(interaction->InitState().GetProbeP4(kRfLab)->E());
+  LOG("LARNCGammaXSec", pINFO)  << "Probe E: " << E[0];
+  double *xsec = new double(0.);
+  double *xsec_anti = new double(0.);
+  double *phi = new double(fPhi);
+  double *theta = new double(fTheta);
+  int *nucl = new int(1);
+  int *ndiag = new int(0);
   
-  //gNeutrinoInit = (TLorentzVector*)initialstate->GetProbeP4()->Clone();
-  //gTargetInit   = (TLorentzVector*)initialstate->GetTgtP4()->Clone();
- 
+  dxsec_(E, W, Q2, phi, theta, nucl, ndiag, xsec, xsec_anti);
+  //LOG("LARNCGammaXSec", pWARN)  << "W        " << W[0];
+  //LOG("LARNCGammaXSec", pWARN)  << "Q2       " << Q2[0];
+  //LOG("LARNCGammaXSec", pWARN)  << "neutrino     xsec " << xsec[0];
+  //LOG("LARNCGammaXSec", pWARN)  << "antineutrino xsec " << xsec_anti[0];
 
-  //TensorDim4* output1, output2;
-  //AmplitudeNum(interaction, output1, output2);
-  
+  double ret = 0;
 
-  return 1; // For now return 1
+  if ( interaction->InitState().ProbePdg() > 0 ){
+	ret = (*xsec);
+  } else {
+	ret = (*xsec_anti);
+  }
+
+  delete W;
+  delete Q2;
+  delete phi;
+  delete theta;
+  delete E;
+  delete xsec;    
+  delete xsec_anti;
+  delete nucl;
+  delete ndiag;
+
+  return ret;
 }
 //_____________________________________________________________________________
 double LARNCGammaXSec::Integral(const Interaction * interaction) const
